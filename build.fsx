@@ -64,6 +64,7 @@ Target "AssemblyInfo" (fun _ ->
 
 Target "Clean" (fun _ ->
     !! "src/**/bin"
+    ++ nupkgFolder
     |> CleanDirs
 )
 
