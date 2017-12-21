@@ -1,6 +1,6 @@
 # Hopac.IO
 
-Extensions for standard IO operations with Hopac Jobs without Task<T> or Async<T> overhead.
+Extensions for standard IO operations with Hopac Jobs without `Task<T>` or `Async<T>` overhead.
 
 In order to start the build process run
 
