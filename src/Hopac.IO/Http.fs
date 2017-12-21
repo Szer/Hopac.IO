@@ -9,7 +9,7 @@ module Net =
     type System.Net.HttpWebRequest with
 
         ///**Description**
-        ///returns a response to an Internet request as a Hopac job
+        ///Returns a response to an Internet request as a Hopac job
         member request.GetResponseJob () =
             let inline succeed (wr : WebResponse) : Choice<WebResponse,exn> = downcast wr |> Choice1Of2
             let inline failure (ex : exn)         : Choice<WebResponse,exn> = Choice2Of2 ex
