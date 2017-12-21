@@ -6,8 +6,8 @@ module Stream =
     open System.Text
     open Hopac
 
-    let private defaultBufferSize = 1024
-    let private defaultEncoding   = UTF8Encoding() :> Encoding
+    let internal defaultBufferSize = 1024
+    let internal defaultEncoding   = UTF8Encoding() :> Encoding
 
     type System.IO.Stream with
         

@@ -4,7 +4,6 @@
 open Fake
 open Fake.AssemblyInfoFile
 open Fake.ReleaseNotesHelper
-open Fake.FSIHelper
 
 // Directories
 let nupkgFolder   = "./nupkg"
@@ -87,11 +86,15 @@ Target "Build" (fun _ ->
 Target "NuGet" (fun _ ->
     Paket.Pack(fun p ->
         { p with
-            TemplateFile = nugetTemplate
-            OutputPath   = nupkgFolder
-            Version      = release.NugetVersion
-            ReleaseNotes = toLines release.Notes})
+            LockDependencies = true
+            TemplateFile     = nugetTemplate
+            OutputPath       = nupkgFolder
+            Version          = release.NugetVersion
+            ReleaseNotes     = toLines release.Notes})
 )
+
+// --------------------------------------------------------------------------------------
+// Publish package to nuget.org
 
 Target "PublishNuget" (fun _ ->
     Paket.Push(fun p ->
@@ -99,8 +102,9 @@ Target "PublishNuget" (fun _ ->
             WorkingDir = nupkgFolder })
 )
 
+// Target for build + package publish
 Target "All" DoNothing
-
+// Target for build only
 Target "JustBuild" DoNothing
 
 // Build order
@@ -114,5 +118,5 @@ Target "JustBuild" DoNothing
   ==> "PublishNuget"
   ==> "All"
 
-// start build
+// Default build
 RunTargetOrDefault "JustBuild"
