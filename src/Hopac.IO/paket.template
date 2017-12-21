@@ -1,0 +1,22 @@
+type project
+id Hopac.IO
+licenseUrl
+    https://github.com/Szer/Hopac.IO/blob/master/LICENSE.txt
+title
+    Hopac.IO
+owners
+    Ayrat Hudaygulov
+authors 
+    Ayrat Hudaygulov
+projectUrl
+    https://github.com/Szer/Hopac.Extra
+requireLicenseAcceptance
+    false
+copyright
+    Copyright 2017
+tags
+    hopac fsharp
+summary
+    Extensions for standard IO operations with Hopac Jobs
+description
+    Extensions for standard IO operations with Hopac Jobs
