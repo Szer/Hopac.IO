@@ -1,11 +1,9 @@
 framework: auto-detect
 
 source https://www.nuget.org/api/v2
-
 nuget Hopac
 
 group build-gr
 
     source https://www.nuget.org/api/v2
-
     nuget FAKE

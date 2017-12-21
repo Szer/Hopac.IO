@@ -25,4 +25,4 @@ Build process described in build.fsx
 
 - [Ayrat Hudaygulov][ayratMail]
 
-[ayratMail]: mailto:szer.penguin@gmail.com "Ayrat Hudaygulov email"
+[ayratMail]: mailto:ayrat@hudaygulov.ru "Ayrat Hudaygulov email"
