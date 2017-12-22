@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Stream.fs" />
-    <Compile Include="Http.fs" />
+    <Compile Include="Net.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

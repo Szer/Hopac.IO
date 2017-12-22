@@ -39,7 +39,7 @@ module Stream =
                         if   bytesRead = 0 then return sb else
                         let chars = encoding.GetChars buffer.[..bytesRead-1]
                         return! readInternal (sb.Append chars)
-                    }                
+                    }
                 let! result = readInternal sb
                 return result.ToString()
             }
