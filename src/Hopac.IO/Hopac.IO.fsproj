@@ -7,6 +7,8 @@
   <ItemGroup>
     <Compile Include="Stream.fs" />
     <Compile Include="Net.fs" />
+    <Compile Include="Azure.fs" />
+    <Compile Include="Datalake.fs" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

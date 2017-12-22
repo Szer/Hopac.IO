@@ -10,13 +10,24 @@ Paket and FAKE will do the rest.
 Build process described in build.fsx
 
 ## What's inside
-    * System.IO.Stream
-        * ReadToEndJob
-        * ReadJob
-    * System.IO.StreamReader
-        * ReadToEndJob
-    * System.Net.HttpWebRequest
-        * GetResponseJob
+    * Extensions
+        * System.IO.Stream
+            * ReadToEndJob
+            * ReadJob
+            * WriteJob
+            * CopyToJob
+        * System.IO.StreamReader
+            * ReadToEndJob
+        * System.Net.HttpWebRequest
+            * GetResponseJob
+            * GetRequestStreamJob
+
+    * Standalone functions
+        * Azure
+            * getAdTokenJob (login to Azure ActiveDirectory and get token)
+        * Datalake
+            * uploadStreamJob
+            * downloadStreamJob
 
 ## Requirements
 

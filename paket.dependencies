@@ -2,6 +2,7 @@ framework: auto-detect
 
 source https://www.nuget.org/api/v2
 nuget Hopac
+nuget Newtonsoft.Json
 
 group build-gr
 
