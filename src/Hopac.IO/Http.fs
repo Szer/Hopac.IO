@@ -8,6 +8,9 @@ module Net =
 
     type System.Net.HttpWebRequest with
 
+        //Copy pasted from HttpFs https://github.com/haf/Http.fs/blob/releases/v4.x/HttpFs/HttpFs.fs#L812
+        //Thanks Haf!
+        
         ///**Description**
         ///Returns a response to an Internet request as a Hopac job
         member request.GetResponseJob () =
