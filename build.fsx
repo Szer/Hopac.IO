@@ -64,6 +64,7 @@ Target "AssemblyInfo" (fun _ ->
 
 Target "Clean" (fun _ ->
     !! "src/**/bin"
+    ++ nupkgFolder
     |> CleanDirs
 )
 
@@ -86,11 +87,10 @@ Target "Build" (fun _ ->
 Target "NuGet" (fun _ ->
     Paket.Pack(fun p ->
         { p with
-            LockDependencies = true
-            TemplateFile     = nugetTemplate
-            OutputPath       = nupkgFolder
-            Version          = release.NugetVersion
-            ReleaseNotes     = toLines release.Notes})
+            MinimumFromLockFile = true
+            OutputPath          = nupkgFolder
+            Version             = release.NugetVersion
+            ReleaseNotes        = toLines release.Notes})
 )
 
 // --------------------------------------------------------------------------------------
