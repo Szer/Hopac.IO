@@ -42,7 +42,7 @@ module Azure =
             { ClientId         = ""
               ClientSecret     = ""
               TenantId         = ""
-              Resource         = "https://management.core.windows.net"
+              Resource         = "https://management.core.windows.net/"
               LoginUriTemplate = "https://login.microsoftonline.com/{tenantId}/oauth2/token"
               GrantType        = ClientCredentials }
 

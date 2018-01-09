@@ -28,6 +28,7 @@ Build process described in build.fsx
         * Datalake
             * uploadStreamJob
             * downloadStreamJob
+            * downloadContentJob
 
 ## Requirements
 

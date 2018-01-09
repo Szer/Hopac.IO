@@ -8,7 +8,7 @@ module Datalake =
     open Stream
     open Hopac
 
-    let internal baseUriTemplate = sprintf "https://%s.azuredatalakestore.net/webhdfs/v1/"
+    let internal baseUriTemplate = sprintf "https://%s.azuredatalakestore.net/webhdfs/v1"
 
     type SyncFlag = 
         | Data
@@ -41,6 +41,15 @@ module Datalake =
               Permission  = None
               ApiVersion  = None }
 
+    type OpenParam = 
+        { StorageName : string
+          Path        : string
+          AccessToken : string }
+        static member Default = 
+            { StorageName = ""
+              Path        = ""
+              AccessToken = "" }
+
     let internal getQueryString uploadParams = 
         seq {
             if uploadParams.SyncFlag.IsSome then
@@ -70,7 +79,6 @@ module Datalake =
             yield "write=true"
             yield "op=CREATE"
         } |> String.concat "&"
-
     
     ///**Description**
     ///Uploads stream to Azure DataLake
@@ -82,7 +90,7 @@ module Datalake =
     ///  * `Job<Choice<HttpWebResponse,exn>>` - On success returns `HttpWebResponse`, on failure - `exn` as Hopac job
     let uploadStreamJob setUploadParams =
         job {
-            let uploadParams = setUploadParams UploadParam.Default
+            let uploadParams = setUploadParams UploadParam.Default : UploadParam
             let encodedPath  = WebUtility.UrlEncode uploadParams.Path
             let uri = 
                 (baseUriTemplate uploadParams.StorageName) + 
@@ -102,5 +110,54 @@ module Datalake =
 
             return! req.GetResponseJob()
         }
-        
-    let downloadStreamJob () = ()
+
+    ///**Description**
+    ///Download file from Azure DataLake as `Stream`
+    ///**Parameters**
+    ///  * `setOpenParams` - function to setup open parameters. 
+    ///Example ```fun p -> { p with Path = "\myFolder\file.txt"``` }
+    ///
+    ///**Output Type**
+    ///  * `Job<Choice<Stream,exn>>` - On success returns `Stream`, on failure - `exn` as Hopac job        
+    let downloadStreamJob setOpenParams = 
+        job {
+            let openParams = setOpenParams OpenParam.Default
+            let encodedPath  = WebUtility.UrlEncode openParams.Path
+            let uri = 
+                (baseUriTemplate openParams.StorageName) + 
+                (if encodedPath.StartsWith("/") then "" else "/") + 
+                encodedPath + 
+                (if encodedPath.EndsWith("?") then "" else "?") +
+                "op=OPEN&read=true"
+
+            let req = HttpWebRequest.CreateHttp(uri)
+            req.Method <- "GET"
+            req.Headers.["Authorization"] <- "Bearer " + openParams.AccessToken
+
+            let! resp = req.GetResponseJob()
+            match resp with
+            | Choice1Of2 resp ->
+                let stream = resp.GetResponseStream()
+                return Choice1Of2 stream
+            | Choice2Of2 ex   ->
+                return Choice2Of2 ex
+        }
+
+    ///**Description**
+    ///Download file from Azure DataLake as `String`
+    ///**Parameters**
+    ///  * `setOpenParams` - function to setup open parameters. 
+    ///Example ```fun p -> { p with Path = "\myFolder\file.txt"``` }
+    ///
+    ///**Output Type**
+    ///  * `Job<Choice<String,exn>>` - On success returns `String`, on failure - `exn` as Hopac job   
+    let downloadContentJob setOpenParams = 
+        job {
+            let! resp = downloadStreamJob setOpenParams
+            match resp with
+            | Choice1Of2 stream ->
+                let! content = stream.ReadToEndJob()
+                return Choice1Of2 content
+            | Choice2Of2 ex   ->
+                return Choice2Of2 ex
+        }
