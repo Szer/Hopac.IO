@@ -16,6 +16,9 @@ let project = "Hopac.IO"
 // (used as description in AssemblyInfo and as a short summary for NuGet package)
 let summary = "Extensions for standard IO operations with Hopac Jobs"
 
+// Pattern specifying assemblies to be tested using NUnit
+let testAssemblies = "tests/**/*.??proj"
+
 // Default target configuration
 let configuration = "Release"
 
@@ -81,6 +84,19 @@ Target "Build" (fun _ ->
                 Project       = slnPath }))
     )
 
+
+// --------------------------------------------------------------------------------------
+// Run the unit tests using test runner
+
+Target "RunTests" (fun _ ->
+    !! testAssemblies
+    |> Seq.iter (fun testDll ->
+        DotNetCli.Test (fun p ->
+            { p with Project = testDll }
+        )
+    )
+)
+
 // --------------------------------------------------------------------------------------
 // Build a NuGet package
 
@@ -111,6 +127,7 @@ Target "JustBuild" DoNothing
 "AssemblyInfo"
   ==> "Clean"
   ==> "Build"
+  ==> "RunTests"
   ==> "JustBuild"
 
 "JustBuild"

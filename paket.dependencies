@@ -8,3 +8,12 @@ group build-gr
 
     source https://www.nuget.org/api/v2
     nuget FAKE
+
+group Test
+
+    source https://nuget.org/api/v2
+    nuget NUnit
+    nuget Microsoft.NET.Test.Sdk
+    nuget NUnit3TestAdapter
+    nuget FsUnit
+    nuget FsCheck
