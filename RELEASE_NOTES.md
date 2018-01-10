@@ -1,3 +1,8 @@
+#### 1.1.0 - 2018-01-10
+* Fixed Datalake stream upload
+* Switched to meaningful versioning (Minor will be bumped on functional updates, Build will be bumped on fixes)
+* Fixed ProjectUrl
+
 #### 1.0.3 - 2018-01-09
 * added: 
     * Stream.WriteJob
