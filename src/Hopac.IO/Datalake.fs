@@ -100,7 +100,8 @@ module Datalake =
             req.Headers.["Authorization"] <- "Bearer " + uploadParams.AccessToken
 
             let! stream = req.GetRequestStreamJob()
-            do! uploadParams.Stream.CopyToJob stream
+            do!  uploadParams.Stream.CopyToJob stream
+            stream.Dispose()
 
             return! req.GetResponseJob()
         }
@@ -119,7 +120,7 @@ module Datalake =
             let encodedPath  = WebUtility.UrlEncode openParams.Path
             let uri = 
                 (baseUriTemplate openParams.StorageName) + 
-                (if encodedPath.StartsWith("/") then "" else "/") + 
+                (if openParams.Path.StartsWith("/") then "" else "/") + 
                 encodedPath + 
                 (if encodedPath.EndsWith("?") then "" else "?") +
                 "op=OPEN&read=true"
