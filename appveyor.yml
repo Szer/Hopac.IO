@@ -5,6 +5,8 @@ branches:
 environment:
   NUGET_KEY:
     secure: Uhan5YIuSa14YXdgATOaAcUqNna1FgbgkFTjmlyYvdnJ15z7OMnp+Kq9ndd5iTnQ
+  nugetkey:
+    secure: Uhan5YIuSa14YXdgATOaAcUqNna1FgbgkFTjmlyYvdnJ15z7OMnp+Kq9ndd5iTnQ
 init:
   - git config --global core.autocrlf input
 build_script:
