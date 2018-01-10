@@ -394,5 +394,6 @@ paket-files/
 # Deploy folder
 /deploy
 
-# test script
+# test scripts
 src/Hopac.IO/script.fsx
+tests/Hopac.IO.Tests/script.fsx
