@@ -54,28 +54,23 @@ module Datalake =
         seq {
             if uploadParams.SyncFlag.IsSome then
                 yield (sprintf "syncFlag=%s" 
-                <| uploadParams.SyncFlag.Value.AsString()
-                |> WebUtility.UrlEncode)
+                <| uploadParams.SyncFlag.Value.AsString())
 
             if uploadParams.LeaseId.IsSome then
                 yield (sprintf "leaseId=%s" 
-                <| uploadParams.LeaseId.Value.ToString()            
-                |> WebUtility.UrlEncode)
+                <| uploadParams.LeaseId.Value.ToString())
 
             if uploadParams.Overwrite.IsSome then
                 yield (sprintf "overwrite=%s" 
-                <| uploadParams.Overwrite.Value.ToString()            
-                |> WebUtility.UrlEncode)
+                <| uploadParams.Overwrite.Value.ToString().ToLowerInvariant())
 
             if uploadParams.Permission.IsSome then
                 yield (sprintf "permission=%s" 
-                <| uploadParams.Permission.Value.ToString()            
-                |> WebUtility.UrlEncode)
+                <| uploadParams.Permission.Value.ToString())
 
             if uploadParams.ApiVersion.IsSome then
                 yield (sprintf "api-version=%s" 
-                <| uploadParams.ApiVersion.Value.ToString()            
-                |> WebUtility.UrlEncode)
+                <| uploadParams.ApiVersion.Value.ToString())
             yield "write=true"
             yield "op=CREATE"
         } |> String.concat "&"
@@ -92,9 +87,9 @@ module Datalake =
         job {
             let uploadParams = setUploadParams UploadParam.Default : UploadParam
             let encodedPath  = WebUtility.UrlEncode uploadParams.Path
-            let uri = 
+            let uri =
                 (baseUriTemplate uploadParams.StorageName) + 
-                (if encodedPath.StartsWith("/") then "" else "/") + 
+                (if uploadParams.Path.StartsWith("/") then "" else "/") + 
                 encodedPath + 
                 (if encodedPath.EndsWith("?") then "" else "?") +
                 getQueryString uploadParams
@@ -106,7 +101,6 @@ module Datalake =
 
             let! stream = req.GetRequestStreamJob()
             do! uploadParams.Stream.CopyToJob stream
-            stream.Dispose()
 
             return! req.GetResponseJob()
         }
