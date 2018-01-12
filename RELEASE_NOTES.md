@@ -1,3 +1,9 @@
+#### 1.2.0 - 2018-01-12
+* Breaking changes in Datalake methods:
+    * uploadStreamJob now just uploadJob with ability to upload either String or Stream
+    * downloadContentJob renamed to downloadStringJob for consistency
+    * downloadJobs now take tuple of 3 strings instead of record type
+
 #### 1.1.1 - 2018-01-10
 * Added Stream tests
 

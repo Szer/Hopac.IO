@@ -20,35 +20,25 @@ module Datalake =
             | Metadata -> "METADATA"
             | Close    -> "CLOSE"
 
-    type UploadParam = 
-        { StorageName : string
-          Path        : string
-          AccessToken : string 
-          Stream      : Stream  
-          SyncFlag    : SyncFlag option 
-          LeaseId     : Guid     option 
-          Overwrite   : bool     option 
+    type ContentType = 
+        | StringContent of string
+        | StreamContent of Stream
+    type StorageName  = StorageName  of string
+    type DataLakePath = DataLakePath of string
+    type AccessToken  = AccessToken  of string
+
+    type UploadParamOptional = 
+        { SyncFlag    : SyncFlag option
+          LeaseId     : Guid     option
+          Overwrite   : bool     option
           Permission  : string   option
           ApiVersion  : string   option }
         static member Default = 
-            { StorageName = ""
-              Path        = ""
-              AccessToken = ""
-              Stream      = null
-              SyncFlag    = None
+            { SyncFlag    = None
               LeaseId     = None
               Overwrite   = None
               Permission  = None
               ApiVersion  = None }
-
-    type OpenParam = 
-        { StorageName : string
-          Path        : string
-          AccessToken : string }
-        static member Default = 
-            { StorageName = ""
-              Path        = ""
-              AccessToken = "" }
 
     let internal getQueryString uploadParams = 
         seq {
@@ -78,30 +68,46 @@ module Datalake =
     ///**Description**
     ///Uploads stream to Azure DataLake
     ///**Parameters**
-    ///  * `setUploadParams` - function to setup upload parameters. 
-    ///Example ```fun p -> { p with Path = "\myFolder\file.txt"``` }
+    ///  * `setOptUploadParams` - function to setup optional upload parameters. 
+    ///Example ```fun p -> { p with Overwrite = Some true``` }
+    ///for the most use cases `id` function will be enough
+    ///  * `StorageName` - storage account name 
+    ///  * `DataLakePath` - path inside DataLake where to upload
+    ///  * `AccessToken` - access token
+    ///  * `ContentType` - either String or Stream 
     ///
     ///**Output Type**
     ///  * `Job<Choice<HttpWebResponse,exn>>` - On success returns `HttpWebResponse`, on failure - `exn` as Hopac job
-    let uploadStreamJob setUploadParams =
+    let uploadJob setOptUploadParams (StorageName storage, DataLakePath path, AccessToken token, content) =
         job {
-            let uploadParams = setUploadParams UploadParam.Default : UploadParam
-            let encodedPath  = WebUtility.UrlEncode uploadParams.Path
+            let optUploadParams = setOptUploadParams UploadParamOptional.Default
+            let encodedPath     = WebUtility.UrlEncode path
             let uri =
-                (baseUriTemplate uploadParams.StorageName) + 
-                (if uploadParams.Path.StartsWith("/") then "" else "/") + 
+                (baseUriTemplate storage) + 
+                (if path.StartsWith("/") then "" else "/") + 
                 encodedPath + 
                 (if encodedPath.EndsWith("?") then "" else "?") +
-                getQueryString uploadParams
+                getQueryString optUploadParams
+
+            let originStream =
+                match content with
+                | StreamContent x -> x
+                | StringContent s ->
+                    let stream = new MemoryStream()
+                    let writer = new StreamWriter(stream)
+                    writer.Write(s)
+                    writer.Flush()
+                    stream.Position <- 0L
+                    stream :> Stream
 
             let req = HttpWebRequest.CreateHttp(uri)
             req.Method      <- "PUT"
             req.ContentType <- "application/octet-stream"
-            req.Headers.["Authorization"] <- "Bearer " + uploadParams.AccessToken
+            req.Headers.["Authorization"] <- "Bearer " + token
 
-            let! stream = req.GetRequestStreamJob()
-            do!  uploadParams.Stream.CopyToJob stream
-            stream.Dispose()
+            let! destStream = req.GetRequestStreamJob()
+            do!  originStream.CopyToJob destStream
+            destStream.Dispose()
 
             return! req.GetResponseJob()
         }
@@ -109,25 +115,25 @@ module Datalake =
     ///**Description**
     ///Download file from Azure DataLake as `Stream`
     ///**Parameters**
-    ///  * `setOpenParams` - function to setup open parameters. 
-    ///Example ```fun p -> { p with Path = "\myFolder\file.txt"``` }
+    ///  * `StorageName` - storage account name 
+    ///  * `DataLakePath` - what to download from DataLake
+    ///  * `AccessToken` - access token
     ///
     ///**Output Type**
     ///  * `Job<Choice<Stream,exn>>` - On success returns `Stream`, on failure - `exn` as Hopac job        
-    let downloadStreamJob setOpenParams = 
+    let downloadStreamJob (StorageName storage, DataLakePath path, AccessToken token) = 
         job {
-            let openParams = setOpenParams OpenParam.Default
-            let encodedPath  = WebUtility.UrlEncode openParams.Path
+            let encodedPath  = WebUtility.UrlEncode path
             let uri = 
-                (baseUriTemplate openParams.StorageName) + 
-                (if openParams.Path.StartsWith("/") then "" else "/") + 
+                (baseUriTemplate storage) + 
+                (if path.StartsWith("/") then "" else "/") + 
                 encodedPath + 
                 (if encodedPath.EndsWith("?") then "" else "?") +
                 "op=OPEN&read=true"
 
             let req = HttpWebRequest.CreateHttp(uri)
             req.Method <- "GET"
-            req.Headers.["Authorization"] <- "Bearer " + openParams.AccessToken
+            req.Headers.["Authorization"] <- "Bearer " + token
 
             let! resp = req.GetResponseJob()
             match resp with
@@ -141,14 +147,15 @@ module Datalake =
     ///**Description**
     ///Download file from Azure DataLake as `String`
     ///**Parameters**
-    ///  * `setOpenParams` - function to setup open parameters. 
-    ///Example ```fun p -> { p with Path = "\myFolder\file.txt"``` }
+    ///  * `StorageName` - storage account name 
+    ///  * `DataLakePath` - what to download from DataLake
+    ///  * `AccessToken` - access token
     ///
     ///**Output Type**
     ///  * `Job<Choice<String,exn>>` - On success returns `String`, on failure - `exn` as Hopac job   
-    let downloadContentJob setOpenParams = 
+    let downloadStringJob openParams = 
         job {
-            let! resp = downloadStreamJob setOpenParams
+            let! resp = downloadStreamJob openParams
             match resp with
             | Choice1Of2 stream ->
                 let! content = stream.ReadToEndJob()
