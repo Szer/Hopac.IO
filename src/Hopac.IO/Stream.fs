@@ -4,6 +4,7 @@ module Stream =
 
     open System.Text
     open Hopac
+    open Hopac.Infixes
 
     let internal defaultBufferSize = 1024
     let internal defaultEncoding   = UTF8Encoding() :> Encoding
@@ -41,37 +42,32 @@ module Stream =
         ///**Parameters**
         ///  * `encoding` - Optional. Encoding in which output string will be presented. Default value = UTF8
         member stream.ReadToEndJob(?encoding: Encoding) =
-            job {
-                let encoding = defaultArg encoding defaultEncoding
-                let sb = StringBuilder()
-                let buffer = Array.zeroCreate defaultBufferSize
-                let rec readInternal (sb: StringBuilder) =
-                    job {
-                        let! bytesRead = stream.ReadJob buffer
-                        if   bytesRead = 0 then return sb else
-                        let chars = encoding.GetChars buffer.[..bytesRead-1]
-                        return! readInternal (sb.Append chars)
-                    }
-                let! result = readInternal sb
-                return result.ToString()
-            }
+            let encoding = defaultArg encoding defaultEncoding
+            let sb = StringBuilder()
+            let buffer = Array.zeroCreate defaultBufferSize
+            let rec readInternal (sb: StringBuilder) =
+                stream.ReadJob buffer
+                >>= function
+                | 0 -> Job.result sb
+                | x -> 
+                    encoding.GetChars buffer.[..x-1]
+                    |> sb.Append
+                    |> readInternal
+            readInternal sb
+            >>- string
 
         ///**Description**
         ///Asynchronously reads the bytes from the current stream and writes them to another stream.
         ///**Parameters**
         ///  * `destination` - The stream to which the contents of the current stream will be copied.
         member stream.CopyToJob(destination: System.IO.Stream) =
-            job {
-                let buffer = Array.zeroCreate defaultBufferSize
-                let rec writeInternal () =
-                    job {
-                        let! bytesRead = stream.ReadJob buffer
-                        if   bytesRead = 0 then return () else
-                        do!  destination.WriteJob(buffer,0, bytesRead)
-                        return! writeInternal ()
-                    }
-                do! writeInternal()
-            }
+            let buffer = Array.zeroCreate defaultBufferSize
+            let rec writeInternal () =
+                stream.ReadJob buffer
+                >>= function
+                | 0 -> Job.unit()
+                | x -> destination.WriteJob(buffer,0, x) >>= writeInternal
+            writeInternal()
 
     type System.IO.StreamReader with
 

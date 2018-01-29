@@ -1,3 +1,7 @@
+#### 1.3.0 - 2018-01-29
+* Added DataLake folder listing
+* Refactored job workflows to operators
+
 #### 1.2.0 - 2018-01-12
 * Breaking changes in Datalake methods:
     * uploadStreamJob now just uploadJob with ability to upload either String or Stream

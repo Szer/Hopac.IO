@@ -29,6 +29,7 @@ Build process described in build.fsx
             * uploadJob
             * downloadStreamJob
             * downloadStringJob
+            * getFileListJob
 
 ## Requirements
 

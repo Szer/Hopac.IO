@@ -8,6 +8,7 @@ module Azure =
     open System.Text
     open System.Net
     open Hopac
+    open Hopac.Infixes
     open Stream
 
     let defaultEncoding = UTF8Encoding()
@@ -63,29 +64,23 @@ module Azure =
     ///**Output Type**
     ///  * `Job<Choice<AdToken,exn>>` - On success returns `AdToken`, on failure - `exn` as Hopac job
     let getAdTokenJob setRequest =
-        job {            
-            let tokenRequest = setRequest AdTokenRequest.Default
-            
-            let url = Uri(tokenRequest.LoginUriTemplate.Replace("{tenantId}", tokenRequest.TenantId))
-            let req = HttpWebRequest.CreateHttp(url)
+        let tokenRequest = setRequest AdTokenRequest.Default
+        
+        let url = Uri(tokenRequest.LoginUriTemplate.Replace("{tenantId}", tokenRequest.TenantId))
+        let req = HttpWebRequest.CreateHttp(url)
+        req.Method      <- "POST"
+        req.ContentType <- "application/x-www-form-urlencoded"            
 
-            req.Method      <- "POST"
-            req.ContentType <- "application/x-www-form-urlencoded"            
-
-            //filling request body
-            let  body   = reqToBody tokenRequest
-            let  bytes  = defaultEncoding.GetBytes body
-            let! stream = req.GetRequestStreamJob()
-            do!  stream.WriteJob bytes
-            stream.Dispose()
-            
-            //sending request
-            let! response = req.GetResponseJob()
-            match response with
-            | Choice1Of2 resp -> 
-                let! jsonResponse = resp.GetResponseStream().ReadToEndJob()
-                let  adToken      = JsonConvert.DeserializeObject<AdToken> jsonResponse
-                return Choice1Of2 adToken
-            | Choice2Of2 ex   -> 
-                return Choice2Of2 ex
-        }
+        req.GetRequestStreamJob()
+        >>= Job.useIn (fun s ->
+            reqToBody tokenRequest
+            |> defaultEncoding.GetBytes
+            |> s.WriteJob)
+        >>= req.GetResponseJob
+        >>= function
+        | Choice1Of2 resp -> 
+            resp.GetResponseStream().ReadToEndJob()
+            >>- JsonConvert.DeserializeObject<AdToken>
+            >>- Choice1Of2
+        | Choice2Of2 ex   -> 
+            Job.result <| Choice2Of2 ex
