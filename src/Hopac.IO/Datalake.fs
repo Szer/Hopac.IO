@@ -196,10 +196,12 @@ module Datalake =
         req.GetResponseJob()
         >>= function
         | Choice1Of2 resp ->
-            resp.GetResponseStream().ReadToEndJob()
-            >>- (JToken.Parse 
-                 >> selectJPath "$.FileStatuses.FileStatus[*]"
-                 >> Seq.map toObject<FileStatus>
-                 >> Array.ofSeq
-                 >> Choice1Of2)
+            Job.tryIn
+                (resp.GetResponseStream().ReadToEndJob()
+                 >>- (JToken.Parse 
+                      >> selectJPath "$.FileStatuses.FileStatus[*]"
+                      >> Seq.map toObject<FileStatus>
+                      >> Array.ofSeq))
+                <| (Choice1Of2 >> Job.result)
+                <| (Choice2Of2 >> Job.result)
         | Choice2Of2 ex -> Job.result <| Choice2Of2 ex
