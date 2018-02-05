@@ -30,6 +30,8 @@ Build process described in build.fsx
             * downloadStreamJob
             * downloadStringJob
             * getFileListJob
+        * Stream
+            * readStream
 
 ## Requirements
 
