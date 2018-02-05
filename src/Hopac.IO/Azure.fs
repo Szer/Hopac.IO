@@ -81,8 +81,7 @@ module Azure =
         | Choice1Of2 resp ->
             Job.tryIn
                 (resp.GetResponseStream().ReadToEndJob()
-                 >>- JsonConvert.DeserializeObject<AdToken>
-                 >>- Choice1Of2)
+                 >>- JsonConvert.DeserializeObject<AdToken>)
                 <| (Choice1Of2 >> Job.result)
                 <| (Choice2Of2 >> Job.result)
         | Choice2Of2 ex   -> 

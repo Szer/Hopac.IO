@@ -5,8 +5,8 @@ open System.Reflection
 [<assembly: AssemblyTitleAttribute("Hopac.IO")>]
 [<assembly: AssemblyProductAttribute("Hopac.IO")>]
 [<assembly: AssemblyDescriptionAttribute("Extensions for standard IO operations with Hopac Jobs")>]
-[<assembly: AssemblyVersionAttribute("1.3.1")>]
-[<assembly: AssemblyFileVersionAttribute("1.3.1")>]
+[<assembly: AssemblyVersionAttribute("1.3.2")>]
+[<assembly: AssemblyFileVersionAttribute("1.3.2")>]
 [<assembly: AssemblyConfigurationAttribute("Release")>]
 do ()
 
@@ -14,6 +14,6 @@ module internal AssemblyVersionInformation =
     let [<Literal>] AssemblyTitle = "Hopac.IO"
     let [<Literal>] AssemblyProduct = "Hopac.IO"
     let [<Literal>] AssemblyDescription = "Extensions for standard IO operations with Hopac Jobs"
-    let [<Literal>] AssemblyVersion = "1.3.1"
-    let [<Literal>] AssemblyFileVersion = "1.3.1"
+    let [<Literal>] AssemblyVersion = "1.3.2"
+    let [<Literal>] AssemblyFileVersion = "1.3.2"
     let [<Literal>] AssemblyConfiguration = "Release"
