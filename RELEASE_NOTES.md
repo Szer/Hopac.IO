@@ -1,3 +1,7 @@
+#### 1.3.1 - 2018-02-05
+* Fixed bug with null WebResponse
+* Added try-catches to some Azure jobs
+
 #### 1.3.0 - 2018-01-29
 * Added DataLake folder listing
 * Refactored job workflows to operators
