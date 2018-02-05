@@ -6,7 +6,7 @@ module Net =
     open System.Net
     open Hopac
 
-    type System.Net.HttpWebRequest with
+    type HttpWebRequest with
 
         //Copy-pasted from HttpFs https://github.com/haf/Http.fs/blob/releases/v4.x/HttpFs/HttpFs.fs#L812
         //Thanks Haf!
@@ -21,7 +21,7 @@ module Net =
                   request.EndGetResponse ar
                   |> succeed
                 with
-                | :? WebException as wex when isNull(wex.Response) -> succeed wex.Response
+                | :? WebException as wex when not <| isNull(wex.Response) -> succeed wex.Response
                 | ex -> failure ex
             Alt.fromBeginEnd request.BeginGetResponse tryEndGetResponse (fun _ -> request.Abort())
 
