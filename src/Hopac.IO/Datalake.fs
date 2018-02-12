@@ -122,7 +122,7 @@ module Datalake =
     ///  * `ContentType` - either String or Stream 
     ///
     ///**Output Type**
-    ///  * `Job<Result<int,string>>` - On success returns number of bytes appended, on failure - string with HttpCode description as Hopac job
+    ///  * `Job<Result<int,string>>` - On success returns number of bytes appended, on failure - error description as Hopac job
     let appendJob (StorageName storage, DataLakePath path, AccessToken token, AppendOffset offset, stream: IO.Stream) =
         let encodedPath     = WebUtility.UrlEncode path
         let uri =
@@ -146,7 +146,7 @@ module Datalake =
     ///  * `ContentType` - either String or Stream 
     ///
     ///**Output Type**
-    ///  * `Job<Result<HttpStatusCode,exn>>` - On success returns `HttpStatusCode`, on failure - `exn` as Hopac job
+    ///  * `Job<Result<HttpStatusCode,string>>` - On success returns `HttpStatusCode`, on failure - error description as Hopac job
     let uploadJob setOptUploadParams (StorageName storage, DataLakePath path, AccessToken token, content) =
         let optUploadParams = setOptUploadParams UploadParamOptional.Default
         let encodedPath     = WebUtility.UrlEncode path
@@ -203,7 +203,7 @@ module Datalake =
     ///  * `AccessToken` - access token
     ///
     ///**Output Type**
-    ///  * `Job<Result<Stream,exn>>` - On success returns `Stream`, on failure - `exn` as Hopac job        
+    ///  * `Job<Result<Stream,string>>` - On success returns `Stream`, on failure - error description as Hopac job        
     let downloadStreamJob (StorageName storage, DataLakePath path, AccessToken token) = 
         let encodedPath  = WebUtility.UrlEncode path
         let uri = 
@@ -219,10 +219,11 @@ module Datalake =
         
         req.GetResponseJob()
         >>- function
-        | Ok resp  -> 
+        | Ok resp when resp.StatusCode = HttpStatusCode.OK  -> 
             try  Ok <| resp.GetResponseStream()
-            with e -> Error e
-        | Error ex -> Error ex
+            with e -> Error e.Message
+        | Ok resp  -> Error resp.StatusDescription
+        | Error ex -> Error ex.Message
 
     ///**Description**
     ///Download file from Azure DataLake as `String`
@@ -232,12 +233,16 @@ module Datalake =
     ///  * `AccessToken` - access token
     ///
     ///**Output Type**
-    ///  * `Job<Result<String,exn>>` - On success returns `String`, on failure - `exn` as Hopac job   
+    ///  * `Job<Result<String,string>>` - On success returns `String`, on failure - error description as Hopac job   
     let downloadStringJob =
         downloadStreamJob
         >=> function
-        | Ok stream -> stream.ReadToEndJob() >>- Ok
-        | Error ex  ->            Job.result <|  Error ex
+        | Ok stream -> 
+            Job.tryIn
+                <| stream.ReadToEndJob()
+                <| (Ok >> Job.result)
+                <| fun e -> Job.result <| Error e.Message
+        | Error ex  -> Job.result <| Error ex
 
     ///**Description**
     ///Get file list from folder
@@ -247,7 +252,7 @@ module Datalake =
     ///  * `AccessToken` - access token
     ///
     ///**Output Type**
-    ///  * `Job<Result<FileStatus [],exn>>` - On success returns array of `FileStatus`, on failure - `exn` as Hopac job   
+    ///  * `Job<Result<FileStatus [],string>>` - On success returns array of `FileStatus`, on failure - error description as Hopac job   
     let getFileListJob (StorageName storage, DataLakePath path, AccessToken token) = 
         let encodedPath = WebUtility.UrlEncode path
         let uri =
@@ -263,7 +268,7 @@ module Datalake =
 
         req.GetResponseJob()
         >>= function
-        | Ok resp ->
+        | Ok resp when resp.StatusCode = HttpStatusCode.OK ->
             Job.tryIn
                 (resp.GetResponseStream().ReadToEndJob()
                  >>- (JToken.Parse 
@@ -271,5 +276,6 @@ module Datalake =
                       >> Seq.map toObject<FileStatus>
                       >> Array.ofSeq))
                 <| (Ok >> Job.result)
-                <| (Error >> Job.result)
-        | Error ex -> Job.result <| Error ex
+                <| fun e -> Job.result <| Error e.Message
+        | Ok resp  -> Job.result <| Error resp.StatusDescription
+        | Error ex -> Job.result <| Error ex.Message

@@ -6,7 +6,7 @@ module Stream =
     open Hopac
     open Hopac.Infixes
 
-    let internal defaultBufferSize = 1024
+    let internal defaultBufferSize = 4 * 1024
     let internal defaultEncoding   = UTF8Encoding() :> Encoding
 
     type System.IO.Stream with
@@ -41,10 +41,11 @@ module Stream =
         ///Reads all characters from the current position to the end of the stream.
         ///**Parameters**
         ///  * `encoding` - Optional. Encoding in which output string will be presented. Default value = UTF8
-        member stream.ReadToEndJob(?encoding: Encoding) =
-            let encoding = defaultArg encoding defaultEncoding
+        member stream.ReadToEndJob(?encoding: Encoding, ?bufferSize: int) =
+            let encoding   = defaultArg encoding defaultEncoding
+            let bufferSize = defaultArg bufferSize defaultBufferSize
             let sb = StringBuilder()
-            let buffer = Array.zeroCreate defaultBufferSize
+            let buffer = Array.zeroCreate bufferSize
             let rec readInternal (sb: StringBuilder) =
                 stream.ReadJob buffer
                 >>= function
@@ -60,8 +61,10 @@ module Stream =
         ///Asynchronously reads the bytes from the current stream and writes them to another stream.
         ///**Parameters**
         ///  * `destination` - The stream to which the contents of the current stream will be copied.
-        member stream.CopyToJob(destination: System.IO.Stream) =
-            let buffer = Array.zeroCreate defaultBufferSize
+        ///  * `bufferSize` - optional bufferSize. Default - 4096 bytes
+        member stream.CopyToJob(destination: System.IO.Stream, ?bufferSize: int) =
+            let bufferSize = defaultArg bufferSize defaultBufferSize
+            let buffer = Array.zeroCreate bufferSize
             let rec writeInternal () =
                 stream.ReadJob buffer
                 >>= function
