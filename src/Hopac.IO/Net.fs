@@ -14,8 +14,8 @@ module Net =
         ///**Description**
         ///Returns a response to an Internet request as a Hopac job
         member request.GetResponseJob () =
-            let inline succeed (wr : WebResponse) : Choice<HttpWebResponse,exn> = downcast wr |> Choice1Of2
-            let inline failure (ex : exn) : Choice<HttpWebResponse,exn> = Choice2Of2 ex
+            let inline succeed (wr : WebResponse) : Result<HttpWebResponse,exn> = downcast wr |> Ok
+            let inline failure (ex : exn) : Result<HttpWebResponse,exn> = Error ex
             let tryEndGetResponse ar =
                 try
                   request.EndGetResponse ar

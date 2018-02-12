@@ -12,6 +12,7 @@ module Datalake =
     open Newtonsoft.Json.Linq
 
     let internal baseUriTemplate = sprintf "https://%s.azuredatalakestore.net/webhdfs/v1"
+    let internal defaultBlockSize = 4 * 1024 * 1024
 
     type SyncFlag = 
         | Data
@@ -29,6 +30,7 @@ module Datalake =
     type StorageName  = StorageName  of string
     type DataLakePath = DataLakePath of string
     type AccessToken  = AccessToken  of string
+    type AppendOffset = AppendOffset of int64
 
     type UploadParamOptional = 
         { SyncFlag    : SyncFlag option
@@ -86,6 +88,52 @@ module Datalake =
             yield "op=CREATE"
         } |> String.concat "&"
     
+    let private append token offset (baseUri: string) (buffer: byte[]) method (stream: IO.Stream) =
+        let uri = baseUri + "op=APPEND&append=true&offset=" + string offset
+        stream.ReadJob buffer
+        >>= fun count ->
+            if count = 0 then Job.result <| Ok 0 else
+
+            let req = HttpWebRequest.CreateHttp(uri)
+            req.Method      <- method
+            req.ContentType <- "application/octet-stream"
+            req.Headers.["Authorization"] <- "Bearer " + token
+            req.GetRequestStreamJob()
+            >>= Job.useIn (fun reqStream -> reqStream.WriteJob (buffer, 0, count))
+            >>= fun _ ->
+                let rec getResp retries =
+                    req.GetResponseJob()
+                    >>= function
+                        | Ok resp when resp.StatusCode = HttpStatusCode.OK -> 
+                            Job.result <| Ok count
+                        | Ok resp  -> Job.result <| Error resp.StatusDescription
+                        | Error ex -> 
+                            if retries <= 0 then Job.result <| Error ex.Message
+                            else getResp (retries - 1)
+                getResp 5
+
+    ///**Description**
+    ///Appends stream or string to Azure DataLake file
+    ///**Parameters**
+    ///  * `StorageName` - storage account name 
+    ///  * `DataLakePath` - path inside DataLake where to upload
+    ///  * `AccessToken` - access token
+    ///  * `AppendOffset` - offset of file in DataLake
+    ///  * `ContentType` - either String or Stream 
+    ///
+    ///**Output Type**
+    ///  * `Job<Result<int,string>>` - On success returns number of bytes appended, on failure - string with HttpCode description as Hopac job
+    let appendJob (StorageName storage, DataLakePath path, AccessToken token, AppendOffset offset, stream: IO.Stream) =
+        let encodedPath     = WebUtility.UrlEncode path
+        let uri =
+            (baseUriTemplate storage) + 
+            (if path.StartsWith("/") then "" else "/") + 
+            encodedPath + 
+            (if encodedPath.EndsWith("?") then "" else "?")
+
+        let buffer: byte[] = Array.zeroCreate defaultBlockSize
+        append token offset uri buffer "POST" stream
+
     ///**Description**
     ///Uploads stream to Azure DataLake
     ///**Parameters**
@@ -98,15 +146,17 @@ module Datalake =
     ///  * `ContentType` - either String or Stream 
     ///
     ///**Output Type**
-    ///  * `Job<Choice<HttpWebResponse,exn>>` - On success returns `HttpWebResponse`, on failure - `exn` as Hopac job
+    ///  * `Job<Result<HttpStatusCode,exn>>` - On success returns `HttpStatusCode`, on failure - `exn` as Hopac job
     let uploadJob setOptUploadParams (StorageName storage, DataLakePath path, AccessToken token, content) =
         let optUploadParams = setOptUploadParams UploadParamOptional.Default
         let encodedPath     = WebUtility.UrlEncode path
-        let uri =
+        let baseUri =
             (baseUriTemplate storage) + 
             (if path.StartsWith("/") then "" else "/") + 
             encodedPath + 
-            (if encodedPath.EndsWith("?") then "" else "?") +
+            (if encodedPath.EndsWith("?") then "" else "?")
+        let createUri =
+            baseUri +
             getQueryStringForUpload optUploadParams
 
         let originStream =
@@ -120,14 +170,30 @@ module Datalake =
                 stream.Position <- 0L
                 stream :> Stream
 
-        let req = HttpWebRequest.CreateHttp(uri)
-        req.Method      <- "PUT"
-        req.ContentType <- "application/octet-stream"
-        req.Headers.["Authorization"] <- "Bearer " + token
+        let buffer: byte[] = Array.zeroCreate defaultBlockSize
 
-        req.GetRequestStreamJob()
-        >>= Job.useIn originStream.CopyToJob
-        >>= req.GetResponseJob
+        originStream.ReadJob buffer
+        >>= fun count ->
+            let req = HttpWebRequest.CreateHttp(createUri)
+            req.Method      <- "PUT"
+            req.ContentType <- "application/octet-stream"
+            req.Headers.["Authorization"] <- "Bearer " + token
+
+            req.GetRequestStreamJob()
+            >>= Job.useIn (fun reqStream -> reqStream.WriteJob (buffer, 0, count))
+            >>= req.GetResponseJob
+            >>= function
+                | Ok resp ->
+                    if count < defaultBlockSize then Job.result <| Ok HttpStatusCode.Created
+                    else
+                        let rec appendToTheEnd curOffset =
+                            append token curOffset baseUri buffer "POST" originStream
+                            >>= function
+                                | Ok count when count = 0 -> Job.result <| Ok HttpStatusCode.Created
+                                | Ok count -> appendToTheEnd (curOffset + int64 count)
+                                | Error ex -> Job.result <| Error ex
+                        appendToTheEnd (int64 defaultBlockSize)
+                | Error ex -> Job.result <| Error ex.Message
 
     ///**Description**
     ///Download file from Azure DataLake as `Stream`
@@ -137,7 +203,7 @@ module Datalake =
     ///  * `AccessToken` - access token
     ///
     ///**Output Type**
-    ///  * `Job<Choice<Stream,exn>>` - On success returns `Stream`, on failure - `exn` as Hopac job        
+    ///  * `Job<Result<Stream,exn>>` - On success returns `Stream`, on failure - `exn` as Hopac job        
     let downloadStreamJob (StorageName storage, DataLakePath path, AccessToken token) = 
         let encodedPath  = WebUtility.UrlEncode path
         let uri = 
@@ -153,8 +219,10 @@ module Datalake =
         
         req.GetResponseJob()
         >>- function
-        | Choice1Of2 resp -> Choice1Of2 <| resp.GetResponseStream()
-        | Choice2Of2 ex   -> Choice2Of2 ex
+        | Ok resp  -> 
+            try  Ok <| resp.GetResponseStream()
+            with e -> Error e
+        | Error ex -> Error ex
 
     ///**Description**
     ///Download file from Azure DataLake as `String`
@@ -164,12 +232,12 @@ module Datalake =
     ///  * `AccessToken` - access token
     ///
     ///**Output Type**
-    ///  * `Job<Choice<String,exn>>` - On success returns `String`, on failure - `exn` as Hopac job   
+    ///  * `Job<Result<String,exn>>` - On success returns `String`, on failure - `exn` as Hopac job   
     let downloadStringJob =
         downloadStreamJob
         >=> function
-        | Choice1Of2 stream -> stream.ReadToEndJob() >>- Choice1Of2
-        | Choice2Of2 ex     ->            Job.result <|  Choice2Of2 ex
+        | Ok stream -> stream.ReadToEndJob() >>- Ok
+        | Error ex  ->            Job.result <|  Error ex
 
     ///**Description**
     ///Get file list from folder
@@ -179,7 +247,7 @@ module Datalake =
     ///  * `AccessToken` - access token
     ///
     ///**Output Type**
-    ///  * `Job<Choice<FileStatus [],exn>>` - On success returns array of `FileStatus`, on failure - `exn` as Hopac job   
+    ///  * `Job<Result<FileStatus [],exn>>` - On success returns array of `FileStatus`, on failure - `exn` as Hopac job   
     let getFileListJob (StorageName storage, DataLakePath path, AccessToken token) = 
         let encodedPath = WebUtility.UrlEncode path
         let uri =
@@ -195,13 +263,13 @@ module Datalake =
 
         req.GetResponseJob()
         >>= function
-        | Choice1Of2 resp ->
+        | Ok resp ->
             Job.tryIn
                 (resp.GetResponseStream().ReadToEndJob()
                  >>- (JToken.Parse 
                       >> selectJPath "$.FileStatuses.FileStatus[*]"
                       >> Seq.map toObject<FileStatus>
                       >> Array.ofSeq))
-                <| (Choice1Of2 >> Job.result)
-                <| (Choice2Of2 >> Job.result)
-        | Choice2Of2 ex -> Job.result <| Choice2Of2 ex
+                <| (Ok >> Job.result)
+                <| (Error >> Job.result)
+        | Error ex -> Job.result <| Error ex

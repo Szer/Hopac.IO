@@ -1,3 +1,9 @@
+#### 1.4.0 - 2018-02-12
+* added appendJob to DataLake namespace
+* uploadJob now able to upload streams >30Mb (append continuations)
+* Breaking changes:
+    * All returns Choice1of2/Choice2of2 changed to Result.Ok/Result.Error for clarity
+
 #### 1.3.2 - 2018-02-05
 * Fixed bug with getAdToken return type
 

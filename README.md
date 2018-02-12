@@ -27,6 +27,7 @@ Build process described in build.fsx
             * getAdTokenJob (login to Azure ActiveDirectory and get token)
         * Datalake
             * uploadJob
+            * appendJob
             * downloadStreamJob
             * downloadStringJob
             * getFileListJob
