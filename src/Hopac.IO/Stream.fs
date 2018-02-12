@@ -71,9 +71,13 @@ module Stream =
 
     type System.IO.StreamReader with
 
-        //**Description**
+        ///**Description**
         ///Reads all characters from the current position to the end of the stream.
         ///**Parameters**
         ///  * `encoding` - Optional. Encoding in which output string will be presented. Default value = UTF8
         member reader.ReadToEndJob(?encoding: Encoding) =
             reader.BaseStream.ReadToEndJob(defaultArg encoding defaultEncoding)
+
+    ///**Description**
+    ///Reads all characters from the current position to the end of the stream.
+    let readStream (stream: System.IO.Stream) = stream.ReadToEndJob()

@@ -62,7 +62,7 @@ module Azure =
     ///Example ```fun p -> { p with TenantId = "abc"``` }
     ///
     ///**Output Type**
-    ///  * `Job<Choice<AdToken,exn>>` - On success returns `AdToken`, on failure - `exn` as Hopac job
+    ///  * `Job<Result<AdToken,exn>>` - On success returns `AdToken`, on failure - `exn` as Hopac job
     let getAdTokenJob setRequest =
         let tokenRequest = setRequest AdTokenRequest.Default
         
@@ -78,11 +78,10 @@ module Azure =
             |> s.WriteJob)
         >>= req.GetResponseJob
         >>= function
-        | Choice1Of2 resp ->
+        | Ok resp ->
             Job.tryIn
                 (resp.GetResponseStream().ReadToEndJob()
                  >>- JsonConvert.DeserializeObject<AdToken>)
-                <| (Choice1Of2 >> Job.result)
-                <| (Choice2Of2 >> Job.result)
-        | Choice2Of2 ex   -> 
-            Job.result <| Choice2Of2 ex
+                <| (Ok >> Job.result)
+                <| (Error >> Job.result)
+        | Error ex -> Job.result <| Error ex
