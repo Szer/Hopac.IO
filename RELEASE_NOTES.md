@@ -1,3 +1,10 @@
+#### 1.4.2 - 2018-02-12
+* fixed error when Datalake function downloadStream returns Ok with error inside
+
+#### 1.4.1 - 2018-02-12
+* added optional bufferSize argument to ReadToEndJob, CopyToJob methods
+* changed defaultBufferSize to 4096 bytes
+
 #### 1.4.0 - 2018-02-12
 * added appendJob to DataLake namespace
 * uploadJob now able to upload streams >30Mb (append continuations)
