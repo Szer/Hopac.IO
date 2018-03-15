@@ -1,3 +1,6 @@
+#### 1.4.3 - 2018-03-16
+* Updated paket.bootstrapper.exe
+
 #### 1.4.2 - 2018-02-12
 * fixed error when Datalake function downloadStream returns Ok with error inside
 
