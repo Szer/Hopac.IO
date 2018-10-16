@@ -380,6 +380,9 @@ FakesAssemblies/
 **/*.Server/ModelManifest.xml
 _Pvt_Extensions
 
+# Ionide
+.ionide
+
 # Paket dependency manager
 .paket/paket.exe
 paket-files/
