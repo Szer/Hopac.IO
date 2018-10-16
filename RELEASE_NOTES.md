@@ -2,7 +2,7 @@
 
 ## 1.4.4 - 2018-10-16
 
-* Fixed linting error in README.md
+* Fixed linter errors in README.md
 * Added Azure DevOps build & release
 
 ## 1.4.3 - 2018-03-16
