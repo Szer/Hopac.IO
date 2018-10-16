@@ -2,16 +2,19 @@
 
 [![Build Status](https://dev.azure.com/hopacio/Hopac.IO/_apis/build/status/Szer.Hopac.IO)](https://dev.azure.com/hopacio/Hopac.IO/_build/latest?definitionId=1)
 
+[![Build status](https://ci.appveyor.com/api/projects/status/flxcwyfr6wwcbk6s?svg=true)](https://ci.appveyor.com/project/Szer/hopac-io)
+
 Extensions for standard IO operations with Hopac Jobs without `Task<T>` or `Async<T>` overhead.
 
 In order to start the build process run
 
     > build.cmd // on windows
 
-Paket and FAKE will do the rest. 
+Paket and FAKE will do the rest.
 Build process described in build.fsx
 
 ## What's inside
+
     * Extensions
         * System.IO.Stream
             * ReadToEndJob
