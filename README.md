@@ -1,5 +1,7 @@
 # Hopac.IO
 
+[![Build Status](https://dev.azure.com/hopacio/Hopac.IO/_apis/build/status/Szer.Hopac.IO)](https://dev.azure.com/hopacio/Hopac.IO/_build/latest?definitionId=1)
+
 Extensions for standard IO operations with Hopac Jobs without `Task<T>` or `Async<T>` overhead.
 
 In order to start the build process run
