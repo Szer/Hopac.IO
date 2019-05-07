@@ -1,16 +1,25 @@
 namespace Hopac.IO
 
+[<AutoOpen>]
 module Stream = 
 
     open System
     open System.Text
     open Hopac
-    open Hopac.Infixes
 
     let internal defaultBufferSize = 4 * 1024
     let internal defaultEncoding   = Encoding.UTF8
 
-    [<Extension>]
+    type System.IO.TextReader with
+
+        ///**Description**
+        ///Reads all characters from the current position to the end of the stream.
+        member reader.ReadToEndJob() = Job.fromTask reader.ReadToEndAsync
+
+        [<Obsolete("Do not pass an encoding; specify it at the construction of the text reader.")>]
+        member reader.ReadToEndJob(?encoding: Encoding) =
+            reader.ReadToEndJob()
+
     type System.IO.Stream with
         
         ///**Description**
@@ -23,6 +32,7 @@ module Stream =
             job {
                 let offset = defaultArg offset 0
                 let count  = defaultArg count buffer.Length
+                // TODO: Should we use Job.fromTask and stream.ReadAsync instead?
                 return! Job.fromAsync <| stream.AsyncRead(buffer, offset, count)
             }
 
@@ -39,25 +49,15 @@ module Stream =
                 return! Job.fromAsync <| stream.AsyncWrite(buffer, offset, count)
             }
             
-        ///**Description**
-        ///Reads all characters from the current position to the end of the stream.
-        ///**Parameters**
-        ///  * `encoding` - Optional. Encoding in which output string will be presented. Default value = UTF8
+
+        [<Obsolete("Use TextReader.ReadToEndJob. Streams are supposed to contain binary data; not text.")>]
         member stream.ReadToEndJob(?encoding, ?bufferSize) =
             let encoding   = defaultArg encoding defaultEncoding
             let bufferSize = defaultArg bufferSize defaultBufferSize
-            let sb = StringBuilder()
-            let buffer = Array.zeroCreate bufferSize
-            let rec readInternal (sb: StringBuilder) =
-                stream.ReadJob buffer
-                >>= function
-                | 0 -> Job.result sb
-                | x -> 
-                    encoding.GetChars buffer.[..x-1]
-                    |> sb.Append
-                    |> readInternal
-            readInternal sb
-            >>- string
+            job {
+                use sr = new System.IO.StreamReader(stream, encoding)
+                return! sr.ReadToEndJob()
+            }
 
         ///**Description**
         ///Asynchronously reads the bytes from the current stream and writes them to another stream.
@@ -67,17 +67,6 @@ module Stream =
         member stream.CopyToJob(destination: System.IO.Stream, ?bufferSize: int) =
             let bufferSize = defaultArg bufferSize defaultBufferSize
             Alt.fromUnitTask <| fun ct -> stream.CopyToAsync(destination, bufferSize, ct)
-
-    [<Extension>]
-    type System.IO.TextReader with
-
-        ///**Description**
-        ///Reads all characters from the current position to the end of the stream.
-        member reader.ReadToEndJob() = Job.fromTask reader.ReadToEndAsync
-
-        [<Obsolete("Do not pass an encoding; specify it at the construction of the text reader.")>]
-        member reader.ReadToEndJob(?encoding: Encoding) =
-            reader.ReadToEndJob()
 
     ///**Description**
     ///Reads all characters from the current position to the end of the stream.
