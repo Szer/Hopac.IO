@@ -80,8 +80,8 @@ module Azure =
         >>= function
         | Ok resp ->
             Job.tryIn
-                (resp.GetResponseStream().ReadToEndJob()
-                 >>- JsonConvert.DeserializeObject<AdToken>)
+                (resp.GetResponseAsStringJob()
+                >>- JsonConvert.DeserializeObject<AdToken>)
                 <| (Ok >> Job.result)
                 <| (Error >> Job.result)
         | Error ex -> Job.result <| Error ex
