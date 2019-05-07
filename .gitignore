@@ -400,3 +400,6 @@ paket-files/
 # test scripts
 src/Hopac.IO/script.fsx
 tests/Hopac.IO.Tests/script.fsx
+
+# AssemblyInfo.fs is generated every time by FAKE.
+**/AssemblyInfo.fs

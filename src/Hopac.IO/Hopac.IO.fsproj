@@ -5,6 +5,7 @@
     <TargetFramework>netstandard1.6</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Stream.fs" />
     <Compile Include="Net.fs" />
     <Compile Include="Azure.fs" />
