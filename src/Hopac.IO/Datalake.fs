@@ -239,7 +239,7 @@ module Datalake =
         >=> function
         | Ok stream -> 
             Job.tryIn
-                <| stream.ReadToEndJob()
+                <| (Job.using (new StreamReader(stream)) (fun sr -> sr.ReadToEndJob()))
                 <| (Ok >> Job.result)
                 <| fun e -> Job.result <| Error e.Message
         | Error ex  -> Job.result <| Error ex
@@ -270,7 +270,7 @@ module Datalake =
         >>= function
         | Ok resp when resp.StatusCode = HttpStatusCode.OK ->
             Job.tryIn
-                (resp.GetResponseStream().ReadToEndJob()
+                (resp.GetResponseAsStringJob()
                  >>- (JToken.Parse 
                       >> selectJPath "$.FileStatuses.FileStatus[*]"
                       >> Seq.map toObject<FileStatus>

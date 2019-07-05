@@ -94,7 +94,7 @@ module Stream =
         |> List.forall (fun enc ->
           let arr = enc.GetBytes str
           use memStream = createStream arr
-          use reader        = new StreamReader(memStream)
-          let strContent    = reader.ReadToEndJob(enc) |> run
+          use reader        = new StreamReader(memStream, enc)
+          let strContent    = reader.ReadToEndJob() |> run
           strContent = str)
       Check.QuickThrowOnFailure isSameString
